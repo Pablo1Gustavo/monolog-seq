@@ -1,5 +1,5 @@
 {
-    "name": "pablo/monolog-seq",
+    "name": "pablo1gustavo/monolog-seq",
     "description": "Integrates Monolog with Seq using HTTP ingestion, enabling structured event logging to a centralized Seq server for enhanced log management.",
     "type": "library",
     "require": {
@@ -11,12 +11,12 @@
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "Pablo\\MonologSeq\\": "src/"
+            "Pablo1Gustavo\\MonologSeq\\": "src/"
         }
     },
     "authors": [
         {
-            "name": "Pablo1Gustavo",
+            "name": "Pablo Gustavo Fernandes Maia",
             "email": "pablo1gustavo.dev@gmail.com"
         }
     ],
