@@ -14,11 +14,19 @@
             "Pablo1Gustavo\\MonologSeq\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Pablo1Gustavo\\MonologSeq\\Test\\": "tests/"
+        }
+    },
     "authors": [
         {
             "name": "Pablo Gustavo Fernandes Maia",
             "email": "pablo1gustavo.dev@gmail.com"
         }
     ],
-    "minimum-stability": "stable"
+    "minimum-stability": "stable",
+    "scripts": {
+        "test": "@php vendor/bin/phpunit --colors --testdox"
+    }
 }
