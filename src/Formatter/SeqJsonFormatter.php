@@ -11,6 +11,14 @@ class SeqJsonFormatter extends JsonFormatter
 {
     const VALID_VAR_REGEX = '/^[a-zA-Z_][a-zA-Z0-9_]*$/';
 
+    public function __construct(bool $includeStacktraces = true)
+    {
+        parent::__construct(
+            appendNewline: false,
+            includeStacktraces: $includeStacktraces
+        );
+    }
+
     public static function getLogLevel(Level $level): string
     {
         return match ($level) {
@@ -28,7 +36,7 @@ class SeqJsonFormatter extends JsonFormatter
     public function format(LogRecord $record): string
     {;
         $normalized = $this->normalize(
-            $this->normalizeRecordForCLEFProperties($record)
+            $this->normalizeRecordForSeq($record)
         );
         return $this->toJson($normalized, true) . ($this->appendNewline ? "\n" : '');
     }
@@ -38,45 +46,44 @@ class SeqJsonFormatter extends JsonFormatter
         return preg_match(self::VALID_VAR_REGEX, $key) && strpos($message, "{{$key}}") !== false;
     }
 
-    protected function normalizeRecordForCLEFProperties(LogRecord $record): array
+    protected function normalizeRecordForSeq(LogRecord $record): array
     {
         $payload = [...$record->context, ...$record->extra]; 
         $messageProperty = CLEF::MESSAGE;
 
-        foreach ($record->context as $key => $_value)
+        foreach ($record->context as $key => $value)
         {
             if (self::messageHasTemplate($record->message, $key))
             {
                 $messageProperty = CLEF::MESSAGE_TEMPLATE;
             }
-            if (strtoupper($key) == 'exception' || $key == CLEF::EXCEPTION->value)
+            if ($value instanceof \Throwable)
             {
-                unset($payload[$key]);
-                $exception = $this->normalizeExceptionAsText($record->context['exception']);
-                $payload[CLEF::EXCEPTION->value] = $exception;
+                $payload[CLEF::EXCEPTION->value] = $this->normalizeExceptionAsText($value);
             }
         }
 
-        return array_merge($payload, [
+        return array_merge([
             CLEF::TIMESTAMP->value  => $record->datetime->format('c'),
             CLEF::LEVEL->value      => self::getLogLevel($record->level),
             $messageProperty->value => $record->message,
-        ]);
+        ], $payload);
     }
 
-    protected function normalizeExceptionAsText(mixed $exception): string
+    protected function normalizeExceptionAsText(\Throwable $exception): string
     {
-        if ($exception instanceof \Throwable)
+        $exceptionText = sprintf(
+            "Exception class: %s\nException message: %s\nException code: %d\nException file: %s:%d",
+            get_class($exception),
+            $exception->getMessage(),
+            $exception->getCode(),
+            $exception->getFile(),
+            $exception->getLine(),
+        );
+        if ($this->includeStacktraces)
         {
-            return sprintf(
-                "%s: %s in %s:%d\nStack trace:\n%s",
-                get_class($exception),
-                $exception->getMessage(),
-                $exception->getFile(),
-                $exception->getLine(),
-                $exception->getTraceAsString()
-            );
+            $exceptionText .= "\nException trace:\n" . $exception->getTraceAsString();
         }
-        return is_string($exception) ? $exception : json_encode($exception);
-    }
+        return $exceptionText;
+    }    
 }

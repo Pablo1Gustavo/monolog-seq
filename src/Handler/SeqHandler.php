@@ -21,7 +21,7 @@ class SeqHandler extends AbstractProcessingHandler
     public function __construct(
         string $url,
         string $apiKey,
-        Level $level = Level::Info,
+        Level $level = Level::Debug,
         bool $bubble = true
     ) {
         if (!\extension_loaded('curl')) {
