@@ -5,3 +5,4 @@ composer.phar
 .hg
 .phpunit.result.cache
 .phpunit.cache
+.vscode
