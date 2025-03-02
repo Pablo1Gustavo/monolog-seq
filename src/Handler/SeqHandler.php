@@ -2,6 +2,7 @@
 declare(strict_types=1);
 namespace Pablo1Gustavo\MonologSeq\Handler;
 
+use CurlHandle;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Handler\Curl\Util as CurlUtil;
 use Monolog\Handler\MissingExtensionException;
@@ -34,10 +35,11 @@ class SeqHandler extends AbstractProcessingHandler
 
     protected function write(LogRecord $record): void
     {
-        $this->send($record->formatted);
+        $curlRequest = $this->buildRequest($record->formatted);
+        CurlUtil::execute($curlRequest);
     }
 
-    protected function send(string $data): void
+    public function buildRequest(string $data): CurlHandle
     {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->url);
@@ -49,7 +51,7 @@ class SeqHandler extends AbstractProcessingHandler
         ]);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
 
-        CurlUtil::execute($ch);
+        return $ch;
     }
 
     protected function getDefaultFormatter(): FormatterInterface
