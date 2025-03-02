@@ -5,7 +5,6 @@
         src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Webysther_20160423_-_Elephpant.svg/2560px-Webysther_20160423_-_Elephpant.svg.png"
         width="200"
     />
-    <span style="font-size: 80px; font-weight: bold;">+</span>
     <img
         src="https://blog.getseq.net/content/images/2018/09/Seq-Main-Light-400px.png"
         width="200"
@@ -20,6 +19,7 @@ Integrates PHP Monolog with Seq using HTTP ingestion, enabling structured event 
 Install the latest version with
 
 ```bash
+composer require pablo1gustavo/monolog-seq
 ```
 
 ## Usage
@@ -32,8 +32,36 @@ For more detailed usage instructions, refer to the [official Seq documentation](
 
 You can find an example in [`example.php`](example.php).
 
+```php
+$seqUrl = "http://localhost:5341/api/events/raw";
+$seqApiKey = "H16XK1wLgC0LDsen5fwA";
+
+$logger = new Logger('seq');
+$logger->pushHandler(new SeqHandler($seqUrl, $seqApiKey));
+
+$logger->critical('error', ['excepasdtion' => new Exception('error')]);
+$logger->warning('warn message', ['abc' => "123", 'def' => [1,2,3]]); 
+$logger->info("hello my name is {name}", ['name' => 'pablo']);
+$logger->debug("debug message", ['date' => new DateTime("2002-01-13")]);
+$logger->emergency("teste");
+```
+
 ### Usage (Laravel)
 
 Laravel allows you to configure **custom Monolog handlers**, such as this package, within its logging configuration file.
 
 For step-by-step instructions, refer to the [Laravel Logging - Creating Monolog Handler Channels](https://laravel.com/docs/12.x/logging#creating-monolog-handler-channels) documentation.
+
+Example:
+```php
+        'seq' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'handler' => \Pablo1Gustavo\MonologSeq\Handler\SeqHandler::class,
+            'formatter' => \Pablo1Gustavo\MonologSeq\Formatter\SeqJsonFormatter::class,
+            'with' => [
+                'url' => env('SEQ_URL'),
+                'apiKey' => env('SEQ_API_KEY'),
+            ],
+        ]
+```
