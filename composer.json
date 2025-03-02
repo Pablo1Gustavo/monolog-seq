@@ -2,7 +2,17 @@
     "name": "pablo1gustavo/monolog-seq",
     "description": "Integrates Monolog with Seq using HTTP ingestion, enabling structured event logging to a centralized Seq server for enhanced log management.",
     "type": "library",
+    "keywords": [
+        "log",
+        "logging",
+        "integration",
+        "monolog",
+        "seq",
+        "datalust"
+    ],
+    "readme": "README.md",
     "require": {
+        "php": ">=8.1",
         "monolog/monolog": "^3.0"
     },
     "require-dev": {
@@ -22,7 +32,8 @@
     "authors": [
         {
             "name": "Pablo Gustavo Fernandes Maia",
-            "email": "pablo1gustavo.dev@gmail.com"
+            "email": "pablo1gustavo.dev@gmail.com",
+            "homepage": "https://github.com/Pablo1Gustavo"
         }
     ],
     "minimum-stability": "stable",
