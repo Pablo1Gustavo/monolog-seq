@@ -51,7 +51,7 @@ class SeqJsonFormatter extends JsonFormatter
         $payload = [...$record->context, ...$record->extra]; 
         $messageProperty = CLEF::MESSAGE;
 
-        foreach ($record->context as $key => $value)
+        foreach ($payload as $key => $value)
         {
             if (self::messageHasTemplate($record->message, $key))
             {

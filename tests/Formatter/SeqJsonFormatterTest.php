@@ -63,13 +63,14 @@ class SeqJsonFormatterTest extends TestCase
     public function test_format_message_template()
     {
         $record = $this->getRecord(
-            message: "hello my name is {name}",
-            context: ['name' => 'pablo']
+            message: "hello my name is {name} and I'm {age} years old",
+            context: ['name' => 'pablo'],
+            extra: ['age' => 25] ,
         );
         $formatted = $this->formatter->format($record);
 
         $this->assertStringNotContainsString("\"@m\"", $formatted);
-        $this->assertStringContainsString("\"@mt\":\"hello my name is {name}\"", $formatted);
+        $this->assertStringContainsString("\"@mt\":\"hello my name is {name} and I'm {age} years old\"", $formatted);
     }
 
     public function test_format_message_with_exception_without_trace()
