@@ -6,8 +6,8 @@
         width="200"
     />
     <img
-        src="https://blog.getseq.net/content/images/2018/09/Seq-Main-Light-400px.png"
-        width="200"
+        src="https://datalust.co/assets/seq-logo-light.svg"
+        width="250"
         style="margin-left: 20px;"
     />
 </p>
