@@ -111,4 +111,62 @@ class SeqHandlerTest extends MonologTestCase
 
         $this->assertTrue($result);
     }
+
+    public function test_handle_batch_sends_single_request(): void
+    {
+        $history = [];
+        $handler = $this->createHandler($history);
+        $handler->handleBatch([
+            $this->getRecord(Level::Info, 'first'),
+            $this->getRecord(Level::Warning, 'second'),
+            $this->getRecord(Level::Error, 'third'),
+        ]);
+
+        $this->assertCount(1, $history);
+    }
+
+    public function test_handle_batch_sends_newline_delimited_body(): void
+    {
+        $history = [];
+        $handler = $this->createHandler($history);
+        $handler->handleBatch([
+            $this->getRecord(Level::Info, 'first'),
+            $this->getRecord(Level::Warning, 'second'),
+        ]);
+
+        $lines = explode("\n", (string) $history[0]['request']->getBody());
+        $this->assertCount(2, $lines);
+        $this->assertStringContainsString('first', $lines[0]);
+        $this->assertStringContainsString('second', $lines[1]);
+    }
+
+    public function test_handle_batch_filters_records_below_minimum_level(): void
+    {
+        $history = [];
+        $handler = $this->createHandler($history, Level::Warning);
+        $handler->handleBatch([
+            $this->getRecord(Level::Debug, 'ignored'),
+            $this->getRecord(Level::Info, 'also ignored'),
+            $this->getRecord(Level::Warning, 'included'),
+            $this->getRecord(Level::Error, 'also included'),
+        ]);
+
+        $body = (string) $history[0]['request']->getBody();
+        $this->assertCount(2, explode("\n", $body));
+        $this->assertStringNotContainsString('ignored', $body);
+        $this->assertStringContainsString('included', $body);
+        $this->assertStringContainsString('also included', $body);
+    }
+
+    public function test_handle_batch_sends_no_request_when_all_records_filtered(): void
+    {
+        $history = [];
+        $handler = $this->createHandler($history, Level::Error);
+        $handler->handleBatch([
+            $this->getRecord(Level::Debug),
+            $this->getRecord(Level::Info),
+        ]);
+
+        $this->assertCount(0, $history);
+    }
 }

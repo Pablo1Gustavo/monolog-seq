@@ -8,6 +8,7 @@ use Monolog\Formatter\FormatterInterface;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\{Level, LogRecord};
 use Pablo1Gustavo\MonologSeq\Formatter\SeqJsonFormatter;
+use Psr\Http\Message\ResponseInterface;
 
 class SeqHandler extends AbstractProcessingHandler
 {
@@ -34,6 +35,25 @@ class SeqHandler extends AbstractProcessingHandler
     protected function write(LogRecord $record): void
     {
         $this->sendPayload($record->formatted);
+    }
+
+    public function handleBatch(array $records): void
+    {
+        $records = array_filter($records, fn (LogRecord $r) => $this->isHandling($r));
+
+        if (empty($records))
+        {
+            return;
+        }
+
+        $body = implode("\n", array_map(function (LogRecord $record): string
+        {
+            $record = $this->processRecord($record);
+
+            return $this->getFormatter()->format($record);
+        }, $records));
+
+        $this->sendPayload($body);
     }
 
     private function sendPayload(string $body): void
