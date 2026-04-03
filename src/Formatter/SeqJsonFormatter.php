@@ -1,15 +1,15 @@
 <?php
+
 declare(strict_types=1);
 namespace Pablo1Gustavo\MonologSeq\Formatter;
 
 use Monolog\Formatter\JsonFormatter;
-use Monolog\Level;
-use Monolog\LogRecord;
+use Monolog\{Level, LogRecord};
 use Pablo1Gustavo\MonologSeq\Enum\CLEFProperty as CLEF;
 
 class SeqJsonFormatter extends JsonFormatter
 {
-    const VALID_VAR_REGEX = '/^[a-zA-Z_][a-zA-Z0-9_]*$/';
+    private const VALID_VAR_REGEX = '/^[a-zA-Z_][a-zA-Z0-9_]*$/';
 
     public function __construct(bool $includeStacktraces = true)
     {
@@ -21,7 +21,8 @@ class SeqJsonFormatter extends JsonFormatter
 
     public static function getLogLevel(Level $level): string
     {
-        return match ($level) {
+        return match ($level)
+        {
             Level::Debug     => 'Debug',
             Level::Info      => 'Information',
             Level::Notice    => 'Information',
@@ -34,11 +35,11 @@ class SeqJsonFormatter extends JsonFormatter
     }
 
     public function format(LogRecord $record): string
-    {;
+    {
         $normalized = $this->normalize(
             $this->normalizeRecordForSeq($record)
         );
-        return $this->toJson($normalized, true) . ($this->appendNewline ? "\n" : '');
+        return $this->toJson($normalized, true);
     }
 
     public static function messageHasTemplate(string $message, string $key): bool
@@ -48,18 +49,25 @@ class SeqJsonFormatter extends JsonFormatter
 
     protected function normalizeRecordForSeq(LogRecord $record): array
     {
-        $payload = [...$record->context, ...$record->extra]; 
+        $payload = [...$record->context, ...$record->extra];
+
         $messageProperty = CLEF::MESSAGE;
+        $hasException = isset($payload[CLEF::EXCEPTION->value]);
 
         foreach ($payload as $key => $value)
         {
-            if (self::messageHasTemplate($record->message, $key))
+            if ($messageProperty === CLEF::MESSAGE && self::messageHasTemplate($record->message, $key))
             {
                 $messageProperty = CLEF::MESSAGE_TEMPLATE;
             }
-            if ($value instanceof \Throwable)
+            if (!$hasException && $value instanceof \Throwable)
             {
                 $payload[CLEF::EXCEPTION->value] = $this->normalizeExceptionAsText($value);
+                $hasException = true;
+            }
+            if ($messageProperty === CLEF::MESSAGE_TEMPLATE && $hasException)
+            {
+                break;
             }
         }
 
@@ -85,5 +93,5 @@ class SeqJsonFormatter extends JsonFormatter
             $exceptionText .= "\nException trace:\n" . $exception->getTraceAsString();
         }
         return $exceptionText;
-    }    
+    }
 }
