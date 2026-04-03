@@ -1,14 +1,13 @@
 <?php
+
 declare(strict_types=1);
 namespace Pablo1Gustavo\MonologSeq\Handler;
 
 use CurlHandle;
-use Monolog\Handler\AbstractProcessingHandler;
-use Monolog\Handler\Curl\Util as CurlUtil;
-use Monolog\Handler\MissingExtensionException;
-use Monolog\Level;
-use Monolog\LogRecord;
 use Monolog\Formatter\FormatterInterface;
+use Monolog\Handler\{AbstractProcessingHandler, MissingExtensionException};
+use Monolog\Handler\Curl\Util as CurlUtil;
+use Monolog\{Level, LogRecord};
 use Pablo1Gustavo\MonologSeq\Formatter\SeqJsonFormatter;
 
 class SeqHandler extends AbstractProcessingHandler
@@ -16,8 +15,8 @@ class SeqHandler extends AbstractProcessingHandler
     protected readonly string $url;
     protected readonly string $apiKey;
 
-    const SEQ_KEY_HEADER = 'X-Seq-Api-Key';
-    const CLEF_CONTENT_TYPE = 'application/vnd.serilog.clef';
+    public const SEQ_KEY_HEADER = 'X-Seq-Api-Key';
+    public const CLEF_CONTENT_TYPE = 'application/vnd.serilog.clef';
 
     public function __construct(
         string $url,
@@ -25,7 +24,8 @@ class SeqHandler extends AbstractProcessingHandler
         Level $level = Level::Debug,
         bool $bubble = true
     ) {
-        if (!\extension_loaded('curl')) {
+        if (!\extension_loaded('curl'))
+        {
             throw new MissingExtensionException('The curl extension is required to use the SeqHandler');
         }
         $this->url = $url;

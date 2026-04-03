@@ -1,13 +1,14 @@
 <?php
+
 declare(strict_types=1);
 namespace Pablo1Gustavo\MonologSeq\Test\Formatter;
 
 use Exception;
 use Monolog\Level;
-use Monolog\Test\TestCase;
+use Monolog\Test\MonologTestCase;
 use Pablo1Gustavo\MonologSeq\Formatter\SeqJsonFormatter;
 
-class SeqJsonFormatterTest extends TestCase
+class SeqJsonFormatterTest extends MonologTestCase
 {
     protected $formatter;
 
@@ -40,7 +41,7 @@ class SeqJsonFormatterTest extends TestCase
     public function test_format_basic_message()
     {
         $datetime = new \DateTimeImmutable("2021-01-01 04:20:59");
-        
+
         $record = $this->getRecord(
             level: Level::Debug,
             message: "teste",
@@ -65,7 +66,7 @@ class SeqJsonFormatterTest extends TestCase
         $record = $this->getRecord(
             message: "hello my name is {name} and I'm {age} years old",
             context: ['name' => 'pablo'],
-            extra: ['age' => 25] ,
+            extra: ['age' => 25],
         );
         $formatted = $this->formatter->format($record);
 
@@ -77,10 +78,11 @@ class SeqJsonFormatterTest extends TestCase
     {
         $this->formatter = new SeqJsonFormatter(includeStacktraces: false);
 
-        try {
+        try
+        {
             throw new Exception("teste", 123);
-        }
-        catch (Exception $e) {
+        } catch (Exception $e)
+        {
             $record = $this->getRecord(
                 level: Level::Error,
                 message: "error",
@@ -89,8 +91,8 @@ class SeqJsonFormatterTest extends TestCase
             $formatted = $this->formatter->format($record);
 
             $this->assertStringContainsString("\"class\":\"Exception\"", $formatted);
-            $this->assertStringContainsString("\"message\":\"teste\"",$formatted);
-            $this->assertStringContainsString("\"code\":123",$formatted);
+            $this->assertStringContainsString("\"message\":\"teste\"", $formatted);
+            $this->assertStringContainsString("\"code\":123", $formatted);
             $this->assertStringContainsString("\"file\":", $formatted);
             $this->assertStringContainsString("\"@x\"", $formatted);
             $this->assertStringContainsString("Exception class: Exception", $formatted);
@@ -108,10 +110,10 @@ class SeqJsonFormatterTest extends TestCase
     {
         $this->formatter = new SeqJsonFormatter(includeStacktraces: true);
 
-        try {
+        try
+        {
             throw new Exception("teste", 123);
-        }
-        catch (Exception $e)
+        } catch (Exception $e)
         {
             $record = $this->getRecord(
                 level: Level::Error,
