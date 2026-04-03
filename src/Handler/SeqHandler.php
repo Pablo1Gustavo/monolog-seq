@@ -3,10 +3,9 @@
 declare(strict_types=1);
 namespace Pablo1Gustavo\MonologSeq\Handler;
 
-use CurlHandle;
+use GuzzleHttp\{Client as GuzzleHttpClient, ClientInterface};
 use Monolog\Formatter\FormatterInterface;
-use Monolog\Handler\{AbstractProcessingHandler, MissingExtensionException};
-use Monolog\Handler\Curl\Util as CurlUtil;
+use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\{Level, LogRecord};
 use Pablo1Gustavo\MonologSeq\Formatter\SeqJsonFormatter;
 
@@ -14,44 +13,38 @@ class SeqHandler extends AbstractProcessingHandler
 {
     protected readonly string $url;
     protected readonly string $apiKey;
+    protected readonly ClientInterface $client;
 
-    public const SEQ_KEY_HEADER = 'X-Seq-Api-Key';
+    public const SEQ_KEY_HEADER = 'X-Seq-ApiKey';
     public const CLEF_CONTENT_TYPE = 'application/vnd.serilog.clef';
 
     public function __construct(
         string $url,
         string $apiKey,
         Level $level = Level::Debug,
-        bool $bubble = true
+        bool $bubble = true,
+        ?ClientInterface $client = null
     ) {
-        if (!\extension_loaded('curl'))
-        {
-            throw new MissingExtensionException('The curl extension is required to use the SeqHandler');
-        }
         $this->url = $url;
         $this->apiKey = $apiKey;
+        $this->client = $client ?? new GuzzleHttpClient();
         parent::__construct($level, $bubble);
     }
 
     protected function write(LogRecord $record): void
     {
-        $curlRequest = $this->buildRequest($record->formatted);
-        CurlUtil::execute($curlRequest);
+        $this->sendPayload($record->formatted);
     }
 
-    public function buildRequest(string $data): CurlHandle
+    private function sendPayload(string $body): void
     {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $this->url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: ' . self::CLEF_CONTENT_TYPE,
-            'X-Seq-ApiKey: ' . $this->apiKey,
+        $this->client->request('POST', $this->url, [
+            'headers' => [
+                'Content-Type'       => self::CLEF_CONTENT_TYPE,
+                self::SEQ_KEY_HEADER => $this->apiKey,
+            ],
+            'body' => $body,
         ]);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-
-        return $ch;
     }
 
     protected function getDefaultFormatter(): FormatterInterface
