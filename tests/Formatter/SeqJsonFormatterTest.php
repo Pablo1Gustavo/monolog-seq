@@ -6,6 +6,7 @@ namespace Pablo1Gustavo\MonologSeq\Test\Formatter;
 use Exception;
 use Monolog\Level;
 use Monolog\Test\MonologTestCase;
+use Pablo1Gustavo\MonologSeq\Enum\CLEFProperty as CLEF;
 use Pablo1Gustavo\MonologSeq\Formatter\SeqJsonFormatter;
 
 class SeqJsonFormatterTest extends MonologTestCase
@@ -125,5 +126,54 @@ class SeqJsonFormatterTest extends MonologTestCase
             $this->assertStringContainsString("\"trace\":", $formatted);
             $this->assertStringContainsString("Exception trace:", $formatted);
         }
+    }
+
+    public function test_format_allows_overriding_clef_properties_from_context(): void
+    {
+        $record = $this->getRecord(
+            level: Level::Info,
+            message: 'test',
+            context: [
+                '@t' => '1970-01-01T00:00:00+00:00',
+                '@l' => 'Fatal',
+                '@m' => 'overridden message',
+            ],
+        );
+
+        $payload = json_decode($this->formatter->format($record), true);
+
+        $this->assertSame('1970-01-01T00:00:00+00:00', $payload['@t']);
+        $this->assertSame('Fatal', $payload['@l']);
+        $this->assertSame('overridden message', $payload['@m']);
+    }
+
+    public function test_format_preserves_event_id_from_context(): void
+    {
+        $record = $this->getRecord(
+            level: Level::Info,
+            message: 'user logged in',
+            context: [CLEF::EVENT_ID->value => 0xABCD],
+        );
+
+        $payload = json_decode($this->formatter->format($record), true);
+
+        $this->assertSame(0xABCD, $payload[CLEF::EVENT_ID->value]);
+    }
+
+    public function test_format_preserves_trace_and_span_ids_from_context(): void
+    {
+        $record = $this->getRecord(
+            level: Level::Info,
+            message: 'traced request',
+            context: [
+                CLEF::TRACE_ID->value => 'abc123',
+                CLEF::SPAN_ID->value  => 'def456',
+            ],
+        );
+
+        $payload = json_decode($this->formatter->format($record), true);
+
+        $this->assertSame('abc123', $payload[CLEF::TRACE_ID->value]);
+        $this->assertSame('def456', $payload[CLEF::SPAN_ID->value]);
     }
 }
