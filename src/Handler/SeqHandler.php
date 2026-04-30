@@ -3,32 +3,45 @@
 declare(strict_types=1);
 namespace Pablo1Gustavo\MonologSeq\Handler;
 
-use GuzzleHttp\{Client as GuzzleHttpClient, ClientInterface};
+use GuzzleHttp\ClientInterface;
 use Monolog\Formatter\FormatterInterface;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\{Level, LogRecord};
+use Pablo1Gustavo\MonologSeq\Exception\SeqDeliveryException;
 use Pablo1Gustavo\MonologSeq\Formatter\SeqJsonFormatter;
-use Psr\Http\Message\ResponseInterface;
+use Pablo1Gustavo\MonologSeq\Http\RetryMiddleware;
 
 class SeqHandler extends AbstractProcessingHandler
 {
     protected readonly string $url;
-    protected readonly string $apiKey;
+    protected readonly ?string $apiKey;
     protected readonly ClientInterface $client;
+    protected readonly int $maxRetries;
 
     public const SEQ_KEY_HEADER = 'X-Seq-ApiKey';
     public const CLEF_CONTENT_TYPE = 'application/vnd.serilog.clef';
 
     public function __construct(
         string $url,
-        string $apiKey,
+        ?string $apiKey = null,
         Level $level = Level::Debug,
         bool $bubble = true,
-        ?ClientInterface $client = null
+        ?ClientInterface $client = null,
+        int $maxRetries = 3,
     ) {
+        if (filter_var($url, FILTER_VALIDATE_URL) === false)
+        {
+            throw new \InvalidArgumentException("Invalid Seq URL: \"{$url}\".");
+        }
+        if ($maxRetries < 0)
+        {
+            throw new \InvalidArgumentException("Max retries must be >= 0, got {$maxRetries}.");
+        }
+
         $this->url = $url;
         $this->apiKey = $apiKey;
-        $this->client = $client ?? new GuzzleHttpClient();
+        $this->maxRetries = $maxRetries;
+        $this->client = $client ?? RetryMiddleware::buildClient($maxRetries);
         parent::__construct($level, $bubble);
     }
 
@@ -58,13 +71,23 @@ class SeqHandler extends AbstractProcessingHandler
 
     private function sendPayload(string $body): void
     {
-        $this->client->request('POST', $this->url, [
-            'headers' => [
-                'Content-Type'       => self::CLEF_CONTENT_TYPE,
-                self::SEQ_KEY_HEADER => $this->apiKey,
-            ],
-            'body' => $body,
-        ]);
+        $headers = ['Content-Type' => self::CLEF_CONTENT_TYPE];
+
+        if (!empty($this->apiKey))
+        {
+            $headers[self::SEQ_KEY_HEADER] = $this->apiKey;
+        }
+
+        try
+        {
+            $this->client->request('POST', $this->url, [
+                'headers' => $headers,
+                'body'    => $body,
+            ]);
+        } catch (\Throwable $e)
+        {
+            throw SeqDeliveryException::sendFailed($this->maxRetries, $e);
+        }
     }
 
     protected function getDefaultFormatter(): FormatterInterface
