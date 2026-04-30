@@ -94,6 +94,25 @@ monolog:
 
 > The `formatter` option is required. Without it, Symfony's MonologBundle applies `LineFormatter` by default, which produces plain text instead of CLEF.
 
+## Retry
+
+`SeqHandler` automatically retries failed deliveries using an exponential-free (immediate) retry strategy. By default it retries up to **3 times** on:
+
+- **Connection errors** — DNS failure, connection refused, timeout, SSL errors
+- **HTTP 503 Service Unavailable** — the only HTTP status that explicitly signals transient unavailability
+
+All other failures (4xx, 500, 502, 504…) are not retried.
+
+When all retries are exhausted, a `SeqDeliveryException` is thrown with the original cause attached as `$previous`.
+
+```php
+new SeqHandler(
+    url: 'http://localhost:5341/ingest/clef',
+    apiKey: 'your-api-key',
+    maxRetries: 5, // default: 3 — set to 0 to disable retries
+);
+```
+
 ## Batch Ingestion
 
 By default, each log record is sent as a separate HTTP request. For better performance, wrap `SeqHandler` with Monolog's `BufferHandler` to accumulate records and flush them in a single request at the end of the process:
